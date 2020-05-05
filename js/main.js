@@ -52,15 +52,19 @@ function authorizedUser() {
   buttonOut.addEventListener("click", logOut);
 }
 
+
+function maskInput(string) {
+  return string != null && !!string.trim();
+}
+
 function notAuthorizedUser() {
 
   function logIn(event) {
     event.preventDefault();
     loginVar = loginInput.value;
-
     localStorage.setItem("gloDelivery", loginVar);
     
-    if (loginVar) {
+    if (maskInput(loginVar)) {
       toggleModalAuth();
       buttonAuth.removeEventListener("click", toggleModalAuth);
       buttonCloseAuth.removeEventListener("click", toggleModalAuth);
@@ -86,7 +90,7 @@ closeError.addEventListener("click", function () {
 })
 
 function checkAuth() {
-  if (loginVar) {
+  if (maskInput(loginVar)) {
     authorizedUser();
 
   } else {
@@ -94,6 +98,7 @@ function checkAuth() {
     notAuthorizedUser();
 
   }
+ 
 }
 
 checkAuth();
