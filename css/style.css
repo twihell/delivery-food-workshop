@@ -159,6 +159,7 @@ button {
     margin-right: 20px;
     font-weight: bold;
     font-size: 18px;
+    margin-left: -50px;
 }
 
 .promo-slider {
@@ -486,6 +487,45 @@ button {
 .modal-body {
     margin-bottom: 22px;
 }
+
+.alert-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
+
+.alert-modal {
+    position: absolute;
+    width: 30vw;
+    background-color: rgba(255, 36, 36, 1);
+    margin: 20px auto;
+    padding:30px;
+    border-radius:5px;
+    box-shadow:0 0 15px 5px #ccc;
+    transform: translateY(-15vw);
+    text-align: center;
+    display: none;
+
+
+}
+
+.alert-modal-show {
+    display: block;
+}
+
+.close-error{
+    position:absolute;
+    width:30px;
+    height:30px;
+    border-width:1px;
+    right:5px;
+    top:5px;
+    text-align:center;
+    font-size:1.6em;
+    cursor:pointer;
+  }
+
+  
 
 .food-row {
     display: flex;
