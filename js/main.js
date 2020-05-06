@@ -1,16 +1,8 @@
+"use strict";
+
 const cartButton = document.querySelector("#cart-button");
 const modal = document.querySelector(".modal");
-const close = document.querySelector(".close");
-
-cartButton.addEventListener("click", toggleModal);
-close.addEventListener("click", toggleModal);
-
-function toggleModal() {
-  modal.classList.toggle("is-open");
-}
-
-//-------------------day 1------------------------------------
-
+const closeBtn = document.querySelector(".close");
 const buttonAuth = document.querySelector(".button-auth");
 const modalAuth = document.querySelector(".modal-auth");
 const buttonCloseAuth = document.querySelector(".close-auth");
@@ -20,8 +12,18 @@ const userName = document.querySelector(".user-name");
 const buttonOut = document.querySelector(".button-out");
 const errorMessage = document.querySelector(".alert-modal");
 const closeError = document.querySelector(".close-error");
+const cardsRestaurants = document.querySelector(".cards-restaurants");
+const containerPromo = document.querySelector(".container-promo");
+const allRestaurants = document.querySelector(".restaurants");
+const menu = document.querySelector(".menu");
+const logo = document.querySelector(".logo");
+const cardsMenu = document.querySelector(".cards-menu");
 
 let loginVar = localStorage.getItem("gloDelivery");
+
+function toggleModal() {
+  modal.classList.toggle("is-open");
+}
 
 function toggleModalAuth() {
   modalAuth.classList.toggle("is-open");
@@ -52,7 +54,6 @@ function authorizedUser() {
   buttonOut.addEventListener("click", logOut);
 }
 
-
 function maskInput(string) {
   return string != null && !!string.trim();
 }
@@ -63,7 +64,7 @@ function notAuthorizedUser() {
     event.preventDefault();
     loginVar = loginInput.value;
     localStorage.setItem("gloDelivery", loginVar);
-    
+
     if (maskInput(loginVar)) {
       toggleModalAuth();
       buttonAuth.removeEventListener("click", toggleModalAuth);
@@ -85,10 +86,6 @@ function notAuthorizedUser() {
 
 }
 
-closeError.addEventListener("click", function () {
-  errorMessage.classList.remove("alert-modal-show");
-})
-
 function checkAuth() {
   if (maskInput(loginVar)) {
     authorizedUser();
@@ -98,7 +95,106 @@ function checkAuth() {
     notAuthorizedUser();
 
   }
- 
+
 }
 
+function createCardRestaurant() {
+  const card = `
+      <a class="card card-restaurant">
+          <img src="img/tanuki/preview.jpg" alt="image" class="card-image" />
+          <div class="card-text">
+              <div class="card-heading">
+                  <h3 class="card-title">Тануки</h3>
+                  <span class="card-tag tag">60 мин</span>
+              </div>
+              <div class="card-info">
+                  <div class="rating">
+                      4.5
+                  </div>
+                  <div class="price">От 1 200 ₽</div>
+                  <div class="category">Суши, роллы</div>
+              </div>
+          </div>
+      </a>`;
+
+  cardsRestaurants.insertAdjacentHTML("beforeend", card);
+}
+
+function createCardGood() {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.insertAdjacentHTML("beforeend", `   
+          <img src="img/pizza-plus/pizza-classic.jpg" alt="image" class="card-image" />
+          <div class="card-text">
+                <div class="card-heading">
+                    <h3 class="card-title card-title-reg">Пицца Классика</h3>
+                </div>
+                <div class="card-info">
+                    <div class="ingredients">Соус томатный, сыр «Моцарелла», сыр «Пармезан», ветчина, салями,
+                              грибы.
+                    </div>
+                </div>
+                <div class="card-buttons">
+                    <button class="button button-primary button-add-cart">
+                        <span class="button-card-text">В корзину</span>
+                        <span class="button-cart-svg"></span>
+                    </button>
+                    <strong class="card-price-bold">510 ₽</strong>
+          </div>
+  `); //insertAdjacentHTML is more effective than innerHTML. Works faster.
+
+  cardsMenu.insertAdjacentElement("beforeend", card);
+}
+
+function openGoods(event) {
+ 
+  if (loginVar) {
+    const target = event.target;
+    const restaurant = target.closest(".card-restaurant"); //this method looks for the closest element with the given name;
+
+    if (restaurant) {
+
+      cardsMenu.textContent = "";
+      containerPromo.classList.add('hide');
+      allRestaurants.classList.add('hide');
+      menu.classList.remove('hide');
+
+
+
+      createCardGood();
+      createCardGood();
+      createCardGood();
+    }
+  } else {
+    toggleModalAuth();
+  }
+
+}
+
+
+
+cartButton.addEventListener("click", toggleModal);
+
+closeBtn.addEventListener("click", toggleModal);
+
+cardsRestaurants.addEventListener("click", openGoods);
+
+logo.addEventListener("click", function () {
+  containerPromo.classList.remove('hide');
+  allRestaurants.classList.remove('hide');
+  menu.classList.add('hide');
+
+  
+});
+
+closeError.addEventListener("click", function () {
+  errorMessage.classList.remove("alert-modal-show");
+})
+
+
+
 checkAuth();
+
+createCardRestaurant();
+createCardRestaurant();
+createCardRestaurant();
