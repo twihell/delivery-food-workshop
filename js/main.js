@@ -19,7 +19,8 @@ const cartButton = document.querySelector("#cart-button"),
   allRestaurants = document.querySelector(".restaurants"),
   cardsMenu = document.querySelector(".cards-menu"),
   logo = document.querySelector(".logo"),
-  restaurantHeading = document.querySelector(".restaurant-heading");
+  restaurantHeading = document.querySelector(".restaurant-heading"),
+  inputSearch = document.querySelector(".input-search");
 
 let loginVar = localStorage.getItem("gloDelivery");
 
@@ -134,7 +135,7 @@ function createCardRestaurant({ image, kitchen, name,
 
   const card = `
       <a class="card card-restaurant" data-products="${products}" >
-          <img src="${image}" alt="image" class="card-image" />
+          <img src="${image}" alt="${name}" class="card-image" />
           <div class="card-text">
               <div class="card-heading">
                   <h3 class="card-title">${name}</h3>
@@ -161,7 +162,7 @@ function createCardGood({ description, image, name, price }) {
   const card = document.createElement("div");
   card.className = "card";
   card.insertAdjacentHTML("beforeend", ` 
-          <img src="${image}" alt="image" class="card-image" />
+          <img src="${image}" alt="${name}" class="card-image" />
           <div class="card-text">
                 <div class="card-heading">
                     <h3 class="card-title card-title-reg">${name}</h3>
@@ -240,12 +241,63 @@ function openGoods(event) {
 
 }
 
+function searchFieldProcessing(event) {
+
+  if (event.keyCode === 13) {
+    const target = event.target;
+
+    const value = target.value.toLowerCase().trim();
+
+    target.value = "";
+
+    if (!value || value.length < 3) {
+      target.style.backgroundColor = "tomato";
+      setTimeout(function () {
+        target.style.backgroundColor = "";
+      }, 2000);
+      return;
+    }
+
+    const goods = [];
+
+    getData('./db/partners.json').then(function (data) {
+      const products = data.map(function (item) {
+        return item.products;
+      });
+
+      products.forEach(function (product) {
+        getData(`./db/${product}`).then(function (data) {
+          goods.push(...data); //spread operator
+
+          const searchGoods = goods.filter(function (item) {
+            return item.name.toLowerCase().includes(value);
+          });
+
+          cardsMenu.textContent = "";
+          containerPromo.classList.add('hide');
+          allRestaurants.classList.add('hide');
+          menu.classList.remove('hide');
+
+          return searchGoods;
+        }).then(function (data) {
+          data.forEach(createCardGood);
+        })
+      })
+
+    });
+
+    let resultHeading = `<h2 class="section-title restaurant-title">Результат поиска</h2>`;
+    restaurantHeading.insertAdjacentHTML("beforeend", resultHeading);
+  }
+
+}
+
 
 
 //event listeners are added at the end. They can be put in a general code initialization function;
 
 function init() {
-  //"then" processes Promises to give as actual data
+  //"then" processes Promises to give us actual data
   getData('./db/partners.json').then(function (data) {
     data.forEach(createCardRestaurant);
   });
@@ -264,6 +316,7 @@ function init() {
     containerPromo.classList.remove('hide');
     allRestaurants.classList.remove('hide');
     menu.classList.add('hide');
+    restaurantHeading.textContent = "";
 
 
   });
@@ -271,9 +324,12 @@ function init() {
   //this listener registers every click on the close button placed in the error message box;
   closeError.addEventListener("click", function () {
     errorMessage.classList.remove("alert-modal-show");
-  })
+  });
 
-  //the last elements in the js focument are function callbacks;
+
+
+  //this listener registers when and what user enters in the search box;
+  inputSearch.addEventListener("keydown", searchFieldProcessing);
 
   checkAuth();
 
@@ -288,3 +344,4 @@ function init() {
 }
 
 init();
+
