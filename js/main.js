@@ -2,28 +2,41 @@
 
 //all variables needed for the code work are created at the very beginning of the js document;
 const cartButton = document.querySelector("#cart-button"),
-modal = document.querySelector(".modal"),
-closeBtn = document.querySelector(".close"),
-buttonAuth = document.querySelector(".button-auth"),
-modalAuth = document.querySelector(".modal-auth"),
-buttonCloseAuth = document.querySelector(".close-auth"),
-authForm = document.querySelector("#logInForm"),
-loginInput = document.querySelector("#login"),
-userName = document.querySelector(".user-name"),
-buttonOut = document.querySelector(".button-out"),
-errorMessage = document.querySelector(".alert-modal"),
-closeError = document.querySelector(".close-error"),
-cardsRestaurants = document.querySelector(".cards-restaurants"),
-containerPromo = document.querySelector(".container-promo"),
-menu = document.querySelector(".menu"),
-allRestaurants = document.querySelector(".restaurants"),
-cardsMenu = document.querySelector(".cards-menu"),
-logo = document.querySelector(".logo");
+  modal = document.querySelector(".modal"),
+  closeBtn = document.querySelector(".close"),
+  buttonAuth = document.querySelector(".button-auth"),
+  modalAuth = document.querySelector(".modal-auth"),
+  buttonCloseAuth = document.querySelector(".close-auth"),
+  authForm = document.querySelector("#logInForm"),
+  loginInput = document.querySelector("#login"),
+  userName = document.querySelector(".user-name"),
+  buttonOut = document.querySelector(".button-out"),
+  errorMessage = document.querySelector(".alert-modal"),
+  closeError = document.querySelector(".close-error"),
+  cardsRestaurants = document.querySelector(".cards-restaurants"),
+  containerPromo = document.querySelector(".container-promo"),
+  menu = document.querySelector(".menu"),
+  allRestaurants = document.querySelector(".restaurants"),
+  cardsMenu = document.querySelector(".cards-menu"),
+  logo = document.querySelector(".logo"),
+  restaurantHeading = document.querySelector(".restaurant-heading");
 
 let loginVar = localStorage.getItem("gloDelivery");
 
 
 //Function declarations/expressions go right after variables;
+
+//This is an asynchronous function 
+const getData = async function (url) {
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Ошибка по адресу ${url}, cтатус ошибки ${response.status}!`); //Interpolation
+  }
+
+  return await response.json();
+};
 
 //This function validates whether login name is correct via regular expression;
 const valid = function (str) {
@@ -116,41 +129,45 @@ function checkAuth() {
 }
 
 //this function generates an html card with a restaurant on the main page;
-function createCardRestaurant() {
+function createCardRestaurant({ image, kitchen, name,
+  price, products, stars, time_of_delivery: timeOfDelivery }) { //Destructuring
+
   const card = `
-      <a class="card card-restaurant">
-          <img src="img/tanuki/preview.jpg" alt="image" class="card-image" />
+      <a class="card card-restaurant" data-products="${products}" >
+          <img src="${image}" alt="image" class="card-image" />
           <div class="card-text">
               <div class="card-heading">
-                  <h3 class="card-title">Тануки</h3>
-                  <span class="card-tag tag">60 мин</span>
+                  <h3 class="card-title">${name}</h3>
+                  <span class="card-tag tag">${timeOfDelivery}</span>
               </div>
               <div class="card-info">
                   <div class="rating">
-                      4.5
+                      ${stars}
                   </div>
-                  <div class="price">От 1 200 ₽</div>
-                  <div class="category">Суши, роллы</div>
+                  <div class="price">От ${price} ₽</div>
+                  <div class="category">${kitchen}</div>
               </div>
           </div>
       </a>`;
 
+
   cardsRestaurants.insertAdjacentHTML("beforeend", card);
 }
 
+
 //this function generates dishes for every restaurant card;
-function createCardGood() {
+function createCardGood({ description, image, name, price }) {
+
   const card = document.createElement("div");
   card.className = "card";
-  card.insertAdjacentHTML("beforeend", `   
-          <img src="img/pizza-plus/pizza-classic.jpg" alt="image" class="card-image" />
+  card.insertAdjacentHTML("beforeend", ` 
+          <img src="${image}" alt="image" class="card-image" />
           <div class="card-text">
                 <div class="card-heading">
-                    <h3 class="card-title card-title-reg">Пицца Классика</h3>
+                    <h3 class="card-title card-title-reg">${name}</h3>
                 </div>
                 <div class="card-info">
-                    <div class="ingredients">Соус томатный, сыр «Моцарелла», сыр «Пармезан», ветчина, салями,
-                              грибы.
+                    <div class="ingredients">${description}
                     </div>
                 </div>
                 <div class="card-buttons">
@@ -158,11 +175,27 @@ function createCardGood() {
                         <span class="button-card-text">В корзину</span>
                         <span class="button-cart-svg"></span>
                     </button>
-                    <strong class="card-price-bold">510 ₽</strong>
+                    <strong class="card-price-bold">${price} ₽</strong>
           </div>
   `); //insertAdjacentHTML is more effective than innerHTML. Works faster.
 
+
   cardsMenu.insertAdjacentElement("beforeend", card);
+}
+
+function createRestaurantHeading({ name, stars, price, kitchen }) {
+  const headingContent = `
+  <h2 class="section-title restaurant-title">${name}</h2>
+        <div class="card-info">
+            <div class="rating">
+               ${stars}
+            </div>
+            <div class="price">От ${price} ₽</div>
+            <div class="category">${kitchen}</div>
+        </div>
+`;
+  restaurantHeading.insertAdjacentHTML('beforeend', headingContent);
+
 }
 
 /*this function opens restaurant dishes after the user clicked on any of them. if they're not logged in, 
@@ -174,63 +207,84 @@ function openGoods(event) {
     const restaurant = target.closest(".card-restaurant"); //this method looks for the closest element with the given name;
 
     if (restaurant) {
-
       cardsMenu.textContent = "";
+      restaurantHeading.textContent = "";
       containerPromo.classList.add('hide');
       allRestaurants.classList.add('hide');
       menu.classList.remove('hide');
-
-
-
-      createCardGood();
-      createCardGood();
-      createCardGood();
     }
+
+    getData('./db/partners.json').then(function (data) {   //getData for restaurant heading
+      let filteredData = data.filter(function (element) {
+
+        if (element.products === restaurant.dataset.products) {
+
+          return true;
+        }
+        return false;
+
+
+      });
+
+      createRestaurantHeading(filteredData[0]);
+    });
+
+    getData(`./db/${restaurant.dataset.products}`).then(function (data) {
+      data.forEach(createCardGood);
+
+    });
+
   } else {
     toggleModalAuth();
   }
 
 }
 
-//event listeners are added after all function declarations/expressions;
-
-//this event listener registers every clieck on a cart button;
-cartButton.addEventListener("click", toggleModal);
-
-//this event listener registers every click on the close button of the card modal window;
-closeBtn.addEventListener("click", toggleModal);
-
-//this listener registers every click on any of the restaurant cards;
-cardsRestaurants.addEventListener("click", openGoods);
-
-//this listener registers every click on the logo of the website;
-logo.addEventListener("click", function () {
-  containerPromo.classList.remove('hide');
-  allRestaurants.classList.remove('hide');
-  menu.classList.add('hide');
 
 
-});
+//event listeners are added at the end. They can be put in a general code initialization function;
 
-//this listener registers every click on the close button placed in the error message box;
-closeError.addEventListener("click", function () {
-  errorMessage.classList.remove("alert-modal-show");
-})
+function init() {
+  //"then" processes Promises to give as actual data
+  getData('./db/partners.json').then(function (data) {
+    data.forEach(createCardRestaurant);
+  });
 
-//the last elements in the js focument are function callbacks;
+  //this event listener registers every clieck on a cart button;
+  cartButton.addEventListener("click", toggleModal);
+
+  //this event listener registers every click on the close button of the card modal window;
+  closeBtn.addEventListener("click", toggleModal);
+
+  //this listener registers every click on any of the restaurant cards;
+  cardsRestaurants.addEventListener("click", openGoods);
+
+  //this listener registers every click on the logo of the website;
+  logo.addEventListener("click", function () {
+    containerPromo.classList.remove('hide');
+    allRestaurants.classList.remove('hide');
+    menu.classList.add('hide');
 
 
-checkAuth();
+  });
 
-createCardRestaurant();
-createCardRestaurant();
-createCardRestaurant();
+  //this listener registers every click on the close button placed in the error message box;
+  closeError.addEventListener("click", function () {
+    errorMessage.classList.remove("alert-modal-show");
+  })
 
-//This is an inicialization code of the slider provided by the Swiper library;
-new Swiper(".swiper-container", {
-  loop: true,
-  autoplay: {
-    delay: 3000
-  },
-  slidesPerView: 1,
-});
+  //the last elements in the js focument are function callbacks;
+
+  checkAuth();
+
+  //This is an inicialization code of the slider provided by the Swiper library;
+  new Swiper(".swiper-container", {
+    loop: true,
+    autoplay: {
+      delay: 3000
+    },
+    slidesPerView: 1,
+  });
+}
+
+init();
