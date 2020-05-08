@@ -28,13 +28,23 @@ const cartButton = document.querySelector("#cart-button"),
 
 let loginVar = localStorage.getItem("gloDelivery");
 
-const cart = JSON.parse(localStorage.getItem("cartContent") || "[]");
-
+const cart = [];
 
 //Function declarations/expressions go right after variables;
+const saveCartData = () => {
+  localStorage.setItem(loginVar, JSON.stringify(cart));
+}
+
+const loadCart = () => {
+  if (localStorage.getItem(loginVar)) {
+    let fromStorage = localStorage.getItem(loginVar);
+    JSON.parse(fromStorage).forEach(item => cart.push(item));
+  }
+}
+
 
 //This is an asynchronous function 
-const getData = async function (url) {
+const getData = async (url) => {
 
   const response = await fetch(url);
 
@@ -46,7 +56,7 @@ const getData = async function (url) {
 };
 
 //This function validates whether login name is correct via regular expression;
-const valid = function (str) {
+const valid = (str) => {
   if (str != null) {
     const nameReg = /^[a-zA-Z][a-zA-Z0-9-_\.]{1,20}$/; /*login should be min 2, max 20 symbols; it can contain
   capital and lowercase letters, numbers, first symbol must be a letter; */
@@ -56,32 +66,35 @@ const valid = function (str) {
   }
 };
 
+
+
 //This function checks whether modal window for cart checkout is opened or closed.
-function toggleModal() {
+const toggleModal = () => {
   modal.classList.toggle("is-open");
 }
 
 //This function checks whether modal login window is open. If it's open, error box can be shown and vice versa.
-function toggleModalAuth() {
+const toggleModalAuth = () => {
   modalAuth.classList.toggle("is-open");
   errorMessage.classList.remove("alert-modal-show");
 }
 
 /*This finction logs user out from the website if the logout button is clicked; 
 in other cases, userName is shown near the logout button;*/
-function authorizedUser() {
-  console.log("Success");
+const authorizedUser = () => {
 
-  function logOut() {
-    loginVar = null;
+  const logOut = () => {
+    cart.length = 0;
+    localStorage.removeItem(loginVar);
     localStorage.removeItem("gloDelivery");
     buttonAuth.style.display = ""; //empty strings state that the value will be equal to the original css value;
     userName.style.display = "";
     buttonOut.style.display = "";
     cartButton.style.display = "";
     buttonOut.removeEventListener("click", logOut);
-    localStorage.removeItem("cartContent");
+    loginVar = null;
     checkAuth();
+
   }
 
   userName.textContent = loginVar;
@@ -90,15 +103,16 @@ function authorizedUser() {
   userName.style.display = "inline";
   buttonOut.style.display = "flex";
   cartButton.style.display = "flex";
+  loadCart();
 
   buttonOut.addEventListener("click", logOut);
 
 }
 
 //this function logs user in after they click the login button;
-function notAuthorizedUser() {
+const notAuthorizedUser = () => {
 
-  function logIn(event) {
+  const logIn = (event) => {
     event.preventDefault();
     loginVar = loginInput.value.trim();
     localStorage.setItem("gloDelivery", loginVar);
@@ -120,27 +134,16 @@ function notAuthorizedUser() {
   buttonAuth.addEventListener("click", toggleModalAuth);
   buttonCloseAuth.addEventListener("click", toggleModalAuth);
   authForm.addEventListener("submit", logIn);
-
-
-
 }
 
 //this function checks whether the user is logged in or not;
-function checkAuth() {
-  if (valid(loginVar)) {
-    authorizedUser();
-
-  } else {
-
-    notAuthorizedUser();
-
-  }
-
+const checkAuth = () => {
+  valid(loginVar) ? authorizedUser() : notAuthorizedUser();
 }
 
 //this function generates an html card with a restaurant on the main page;
-function createCardRestaurant({ image, kitchen, name,
-  price, products, stars, time_of_delivery: timeOfDelivery }) { //Destructuring
+const createCardRestaurant = ({ image, kitchen, name,
+  price, products, stars, time_of_delivery: timeOfDelivery }) => { //Destructuring
 
   const card = `
       <a class="card card-restaurant" data-products="${products}" >
@@ -166,7 +169,7 @@ function createCardRestaurant({ image, kitchen, name,
 
 
 //this function generates dishes for every restaurant card;
-function createCardGood({ description, image, name, price, id }) {
+const createCardGood = ({ description, image, name, price, id }) => {
 
   const card = document.createElement("div");
   card.className = "card";
@@ -194,7 +197,7 @@ function createCardGood({ description, image, name, price, id }) {
   cardsMenu.insertAdjacentElement("beforeend", card);
 }
 
-function createRestaurantHeading({ name, stars, price, kitchen }) {
+const createRestaurantHeading = ({ name, stars, price, kitchen }) => {
   const headingContent = `
   <h2 class="section-title restaurant-title">${name}</h2>
         <div class="card-info">
@@ -211,7 +214,7 @@ function createRestaurantHeading({ name, stars, price, kitchen }) {
 
 /*this function opens restaurant dishes after the user clicked on any of them. if they're not logged in, 
 they will be asked to log in first*/
-function openGoods(event) {
+const openGoods = (event) => {
 
   if (loginVar) {
     const target = event.target;
@@ -225,24 +228,21 @@ function openGoods(event) {
       menu.classList.remove('hide');
     }
 
-    getData('./db/partners.json').then(function (data) {   //getData for restaurant heading
-      let filteredData = data.filter(function (element) {
+    getData('./db/partners.json').then(data => {   //getData for restaurant heading
+      let filteredData = data.filter(element => {
 
         if (element.products === restaurant.dataset.products) {
 
           return true;
         }
         return false;
-
-
       });
 
       createRestaurantHeading(filteredData[0]);
     });
 
-    getData(`./db/${restaurant.dataset.products}`).then(function (data) {
+    getData(`./db/${restaurant.dataset.products}`).then(data => {
       data.forEach(createCardGood);
-
     });
 
   } else {
@@ -251,18 +251,16 @@ function openGoods(event) {
 
 }
 
-function searchFieldProcessing(event) {
+const searchFieldProcessing = (event) => {
 
   if (event.keyCode === 13) {
     const target = event.target;
-
     const value = target.value.toLowerCase().trim();
-
     target.value = "";
 
     if (!value || value.length < 3) {
       target.style.backgroundColor = "tomato";
-      setTimeout(function () {
+      setTimeout(() => {
         target.style.backgroundColor = "";
       }, 2000);
       return;
@@ -270,16 +268,16 @@ function searchFieldProcessing(event) {
 
     const goods = [];
 
-    getData('./db/partners.json').then(function (data) {
-      const products = data.map(function (item) {
+    getData('./db/partners.json').then(data => {
+      const products = data.map(item => {
         return item.products;
       });
 
-      products.forEach(function (product) {
-        getData(`./db/${product}`).then(function (data) {
+      products.forEach(product => {
+        getData(`./db/${product}`).then(data => {
           goods.push(...data); //spread operator
 
-          const searchGoods = goods.filter(function (item) {
+          const searchGoods = goods.filter(item => {
             return item.name.toLowerCase().includes(value);
           });
 
@@ -289,7 +287,7 @@ function searchFieldProcessing(event) {
           menu.classList.remove('hide');
 
           return searchGoods;
-        }).then(function (data) {
+        }).then(data => {
           data.forEach(createCardGood);
         })
       })
@@ -302,7 +300,7 @@ function searchFieldProcessing(event) {
 
 }
 
-function addToCart(event) {
+const addToCart = (event) => {
   const target = event.target;
 
   const buttonAddToCart = target.closest(".button-add-cart");
@@ -312,7 +310,7 @@ function addToCart(event) {
     const title = card.querySelector(".card-title-reg").textContent;
     const cost = card.querySelector(".card-price").textContent;
     const cardId = card.id;
-    const food = cart.find(function (item) {
+    const food = cart.find(item => {
       return item.id === cardId;
     })
 
@@ -320,17 +318,17 @@ function addToCart(event) {
       food.count += 1;
     } else {
       cart.push({ id: cardId, cost, title, count: 1 });
-      localStorage.setItem("cartContent", JSON.stringify(cart));
+
     }
 
   }
-
+  saveCartData();
 }
 
-function renderCart() {
+const renderCart = () => {
   cartContainer.textContent = "";
 
-  cart.forEach(function ({ id, cost, title, count }) {
+  cart.forEach(({ id, cost, title, count }) => {
 
     const itemCart = `
           <div class="food-row">
@@ -347,7 +345,7 @@ function renderCart() {
     cartContainer.insertAdjacentHTML("afterbegin", itemCart);
   })
 
-  const totalPrice = cart.reduce(function (result, item) {
+  const totalPrice = cart.reduce((result, item) => {
     return result + (parseFloat(item.cost) * item.count);
 
   }, 0);
@@ -355,11 +353,11 @@ function renderCart() {
   modalPrice.textContent = totalPrice + " ₽";
 }
 
-function changeCount(event) {
+const changeCount = (event) => {
   const target = event.target;
 
   if (target.classList.contains("counter-button")) {
-    const food = cart.find(function (item) {
+    const food = cart.find(item => {
       return item.id === target.dataset.id;
     });
 
@@ -374,22 +372,21 @@ function changeCount(event) {
 
     renderCart();
   }
-
+  saveCartData();
 }
 
 //event listeners are added at the end. They can be put in a general code initialization function;
 
-function init() {
+const init = () => {
   //"then" processes Promises to give us actual data
-  getData('./db/partners.json').then(function (data) {
+  getData('./db/partners.json').then(data => {
     data.forEach(createCardRestaurant);
   });
 
   //this event listener registers every clieck on a cart button;
-  cartButton.addEventListener("click", function () {
-    renderCart();
-    toggleModal();
-  });
+  cartButton.addEventListener("click", renderCart);
+    
+  cartButton.addEventListener("click", toggleModal);
 
   //this event listener registers every click on the close button of the card modal window;
   closeBtn.addEventListener("click", toggleModal);
@@ -400,20 +397,17 @@ function init() {
   //this listener registers "+" and "-" button clicks within shopping cart
   cartContainer.addEventListener("click", changeCount);
 
-  buttonClearCart.addEventListener("click", function() {
+  buttonClearCart.addEventListener("click", () => {
     cart.length = 0;
-
     renderCart();
   });
 
   //this listener registers every click on the logo of the website;
-  logo.addEventListener("click", function () {
+  logo.addEventListener("click", () => {
     containerPromo.classList.remove('hide');
     allRestaurants.classList.remove('hide');
     menu.classList.add('hide');
     restaurantHeading.textContent = "";
-
-
   });
 
   /*this listener registers every click within menu container of the website
@@ -421,11 +415,9 @@ function init() {
   cardsMenu.addEventListener("click", addToCart);
 
   //this listener registers every click on the close button placed in the error message box;
-  closeError.addEventListener("click", function () {
+  closeError.addEventListener("click", () => {
     errorMessage.classList.remove("alert-modal-show");
   });
-
-
 
   //this listener registers when and what user enters in the search box;
   inputSearch.addEventListener("keydown", searchFieldProcessing);
