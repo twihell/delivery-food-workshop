@@ -20,9 +20,15 @@ const cartButton = document.querySelector("#cart-button"),
   cardsMenu = document.querySelector(".cards-menu"),
   logo = document.querySelector(".logo"),
   restaurantHeading = document.querySelector(".restaurant-heading"),
-  inputSearch = document.querySelector(".input-search");
+  inputSearch = document.querySelector(".input-search"),
+  cartContainer = document.querySelector(".modal-body"),
+  modalPrice = document.querySelector(".modal-pricetag"),
+  buttonClearCart = document.querySelector(".clear-cart");
+
 
 let loginVar = localStorage.getItem("gloDelivery");
+
+const cart = JSON.parse(localStorage.getItem("cartContent") || "[]");
 
 
 //Function declarations/expressions go right after variables;
@@ -72,8 +78,9 @@ function authorizedUser() {
     buttonAuth.style.display = ""; //empty strings state that the value will be equal to the original css value;
     userName.style.display = "";
     buttonOut.style.display = "";
+    cartButton.style.display = "";
     buttonOut.removeEventListener("click", logOut);
-
+    localStorage.removeItem("cartContent");
     checkAuth();
   }
 
@@ -81,9 +88,11 @@ function authorizedUser() {
 
   buttonAuth.style.display = "none";
   userName.style.display = "inline";
-  buttonOut.style.display = "block";
+  buttonOut.style.display = "flex";
+  cartButton.style.display = "flex";
 
   buttonOut.addEventListener("click", logOut);
+
 }
 
 //this function logs user in after they click the login button;
@@ -157,10 +166,11 @@ function createCardRestaurant({ image, kitchen, name,
 
 
 //this function generates dishes for every restaurant card;
-function createCardGood({ description, image, name, price }) {
+function createCardGood({ description, image, name, price, id }) {
 
   const card = document.createElement("div");
   card.className = "card";
+  card.id = id;
   card.insertAdjacentHTML("beforeend", ` 
           <img src="${image}" alt="${name}" class="card-image" />
           <div class="card-text">
@@ -176,7 +186,7 @@ function createCardGood({ description, image, name, price }) {
                         <span class="button-card-text">В корзину</span>
                         <span class="button-cart-svg"></span>
                     </button>
-                    <strong class="card-price-bold">${price} ₽</strong>
+                    <strong class="card-price card-price-bold">${price} ₽</strong>
           </div>
   `); //insertAdjacentHTML is more effective than innerHTML. Works faster.
 
@@ -292,7 +302,80 @@ function searchFieldProcessing(event) {
 
 }
 
+function addToCart(event) {
+  const target = event.target;
 
+  const buttonAddToCart = target.closest(".button-add-cart");
+
+  if (buttonAddToCart) {
+    const card = target.closest(".card");
+    const title = card.querySelector(".card-title-reg").textContent;
+    const cost = card.querySelector(".card-price").textContent;
+    const cardId = card.id;
+    const food = cart.find(function (item) {
+      return item.id === cardId;
+    })
+
+    if (food) {
+      food.count += 1;
+    } else {
+      cart.push({ id: cardId, cost, title, count: 1 });
+      localStorage.setItem("cartContent", JSON.stringify(cart));
+    }
+
+  }
+
+}
+
+function renderCart() {
+  cartContainer.textContent = "";
+
+  cart.forEach(function ({ id, cost, title, count }) {
+
+    const itemCart = `
+          <div class="food-row">
+              <span class="food-name">${title}</span>
+              <strong class="food-price">${cost}</strong>
+              <div class="food-counter">
+                    <button class="counter-button counter-minus" data-id="${id}">-</button>
+                    <span class="counter">${count}</span>
+                    <button class="counter-button counter-plus" data-id="${id}">+</button>
+              </div>
+          </div>
+          `;
+
+    cartContainer.insertAdjacentHTML("afterbegin", itemCart);
+  })
+
+  const totalPrice = cart.reduce(function (result, item) {
+    return result + (parseFloat(item.cost) * item.count);
+
+  }, 0);
+
+  modalPrice.textContent = totalPrice + " ₽";
+}
+
+function changeCount(event) {
+  const target = event.target;
+
+  if (target.classList.contains("counter-button")) {
+    const food = cart.find(function (item) {
+      return item.id === target.dataset.id;
+    });
+
+    if (target.classList.contains("counter-minus")) {
+      food.count--;
+      if (food.count === 0) {
+        cart.splice(cart.indexOf(food), 1)
+      }
+    }
+
+    if (target.classList.contains("counter-plus")) food.count++;
+
+    renderCart();
+  }
+
+}
 
 //event listeners are added at the end. They can be put in a general code initialization function;
 
@@ -303,13 +386,25 @@ function init() {
   });
 
   //this event listener registers every clieck on a cart button;
-  cartButton.addEventListener("click", toggleModal);
+  cartButton.addEventListener("click", function () {
+    renderCart();
+    toggleModal();
+  });
 
   //this event listener registers every click on the close button of the card modal window;
   closeBtn.addEventListener("click", toggleModal);
 
   //this listener registers every click on any of the restaurant cards;
   cardsRestaurants.addEventListener("click", openGoods);
+
+  //this listener registers "+" and "-" button clicks within shopping cart
+  cartContainer.addEventListener("click", changeCount);
+
+  buttonClearCart.addEventListener("click", function() {
+    cart.length = 0;
+
+    renderCart();
+  });
 
   //this listener registers every click on the logo of the website;
   logo.addEventListener("click", function () {
@@ -320,6 +415,10 @@ function init() {
 
 
   });
+
+  /*this listener registers every click within menu container of the website
+   to check whether cart button was clicked;*/
+  cardsMenu.addEventListener("click", addToCart);
 
   //this listener registers every click on the close button placed in the error message box;
   closeError.addEventListener("click", function () {
@@ -344,4 +443,5 @@ function init() {
 }
 
 init();
+
 
