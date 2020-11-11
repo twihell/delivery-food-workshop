@@ -26,21 +26,288 @@ const cartButton = document.querySelector("#cart-button"),
   buttonClearCart = document.querySelector(".clear-cart");
 
 
-let loginVar = localStorage.getItem("gloDelivery");
+// let loginVar = localStorage.getItem("gloDelivery");
 
-const cart = [];
+// const cart = [];
 
-//Function declarations/expressions go right after variables;
-const saveCartData = () => {
-  localStorage.setItem(loginVar, JSON.stringify(cart));
+// //Function declarations/expressions go right after variables;
+// const saveCartData = () => {
+//   localStorage.setItem(loginVar, JSON.stringify(cart));
+// }
+
+// const loadCart = () => {
+//   if (localStorage.getItem(loginVar)) {
+//     let fromStorage = localStorage.getItem(loginVar);
+//     JSON.parse(fromStorage).forEach(item => cart.push(item));
+//   }
+// }
+
+
+// //This is an asynchronous function 
+// const getData = async (url) => {
+
+//   const response = await fetch(url);
+
+//   if (!response.ok) {
+//     throw new Error(`Ошибка по адресу ${url}, cтатус ошибки ${response.status}!`); //Interpolation
+//   }
+
+//   return await response.json();
+// };
+
+// //This function validates whether login name is correct via regular expression;
+// const valid = (str) => {
+//   if (str != null) {
+//     const nameReg = /^[a-zA-Z][a-zA-Z0-9-_\.]{1,20}$/; /*login should be min 2, max 20 symbols; it can contain
+//   capital and lowercase letters, numbers, first symbol must be a letter; */
+//     return nameReg.test(str);
+//   } else {
+//     return false;
+//   }
+// };
+
+
+
+//This function checks whether modal window for cart checkout is opened or closed.
+const toggleModal = () => {
+  modal.classList.toggle("is-open");
 }
 
-const loadCart = () => {
-  if (localStorage.getItem(loginVar)) {
-    let fromStorage = localStorage.getItem(loginVar);
-    JSON.parse(fromStorage).forEach(item => cart.push(item));
+// //This function checks whether modal login window is open. If it's open, error box can be shown and vice versa.
+// const toggleModalAuth = () => {
+//   modalAuth.classList.toggle("is-open");
+//   errorMessage.classList.remove("alert-modal-show");
+// }
+
+// /*This finction logs user out from the website if the logout button is clicked; 
+// in other cases, userName is shown near the logout button;*/
+// const authorizedUser = () => {
+
+//   const logOut = () => {
+//     cart.length = 0;
+//     localStorage.removeItem(loginVar);
+//     localStorage.removeItem("gloDelivery");
+//     buttonAuth.style.display = ""; //empty strings state that the value will be equal to the original css value;
+//     userName.style.display = "";
+//     buttonOut.style.display = "";
+//     cartButton.style.display = "";
+//     buttonOut.removeEventListener("click", logOut);
+//     loginVar = null;
+//     checkAuth();
+
+//   }
+
+//   userName.textContent = loginVar;
+
+//   buttonAuth.style.display = "none";
+//   userName.style.display = "inline";
+//   buttonOut.style.display = "flex";
+//   cartButton.style.display = "flex";
+//   loadCart();
+
+//   buttonOut.addEventListener("click", logOut);
+
+// }
+
+// //this function logs user in after they click the login button;
+// const notAuthorizedUser = () => {
+
+//   const logIn = (event) => {
+//     event.preventDefault();
+//     loginVar = loginInput.value.trim();
+//     localStorage.setItem("gloDelivery", loginVar);
+
+//     if (valid(loginVar)) {
+//       toggleModalAuth();
+//       buttonAuth.removeEventListener("click", toggleModalAuth);
+//       buttonCloseAuth.removeEventListener("click", toggleModalAuth);
+//       authForm.removeEventListener("submit", logIn);
+//     } else {
+//       errorMessage.classList.add("alert-modal-show");
+//       loginInput.value = "";
+//     }
+
+//     authForm.reset();
+//     checkAuth();
+//   }
+
+//   buttonAuth.addEventListener("click", toggleModalAuth);
+//   buttonCloseAuth.addEventListener("click", toggleModalAuth);
+//   authForm.addEventListener("submit", logIn);
+// }
+
+// //this function checks whether the user is logged in or not;
+// const checkAuth = () => {
+//   valid(loginVar) ? authorizedUser() : notAuthorizedUser();
+// }
+
+class Cart {
+  constructor(cart = []) {
+    this.cart = cart;
+  }
+
+  addToCart(item) {
+    this.cart.push(item);
+  }
+
+  findItem(id) {
+    this.cart.find(item => {
+      return item.id === id;
+    })
+  }
+
+  getItems() {
+    return [...this.cart];
+  }
+
+  renderCart() {
+    cartContainer.textContent = "";
+  
+    this.cart.forEach(({ id, cost, title, count }) => {
+  
+      const itemCart = `
+            <div class="food-row">
+                <span class="food-name">${title}</span>
+                <strong class="food-price">${cost}</strong>
+                <div class="food-counter">
+                      <button class="counter-button counter-minus" data-id="${id}">-</button>
+                      <span class="counter">${count}</span>
+                      <button class="counter-button counter-plus" data-id="${id}">+</button>
+                </div>
+            </div>
+            `;
+  
+      cartContainer.insertAdjacentHTML("afterbegin", itemCart);
+    })
+  
+    const totalPrice = this.cart.reduce((result, item) => {
+      return result + (parseFloat(item.cost) * item.count);
+  
+    }, 0);
+  
+    modalPrice.textContent = totalPrice + " ₽";
+  }
+
+  clear() {
+    this.cart.length = 0;
+    this.renderCart();
+  }
+  
+
+
+}
+
+let cart = new Cart();
+
+class DataStorage {
+  loginVar = localStorage.getItem("gloDelivery");
+
+  saveCartData(cart) {
+    localStorage.setItem(this.loginVar, JSON.stringify(cart.getItems()));
+  }
+
+  loadCart(cart) {
+    console.log("+++++", cart);
+    if (localStorage.getItem(this.loginVar)) {
+      
+      let fromStorage = localStorage.getItem(this.loginVar);
+      console.log(fromStorage, "from storage")
+      JSON.parse(fromStorage).forEach(item => cart.addToCart(item));
+    }
+  }
+
+  removeCartData() {
+    localStorage.removeItem("gloDelivery");
+  }
+
+  removeLoginData() {
+    localStorage.removeItem(this.loginVar);
+  }
+
+}
+
+
+class UserAuthentication extends DataStorage {
+
+  authorizedUserHandle() {
+
+    const logOut = () => {
+      cart.length = 0;
+      buttonAuth.style.display = ""; //empty strings state that the value will be equal to the original css value;
+      userName.style.display = "";
+      buttonOut.style.display = "";
+      cartButton.style.display = "";
+      buttonOut.removeEventListener("click", logOut);
+      this.loginVar = null;
+      this.checkAuth();
+
+    }
+
+    userName.textContent = this.loginVar;
+
+    buttonAuth.style.display = "none";
+    userName.style.display = "inline";
+    buttonOut.style.display = "flex";
+    cartButton.style.display = "flex";
+    this.loadCart(cart);
+
+    buttonOut.addEventListener("click", logOut);
+
+  }
+
+  isValid(str) {
+    if (str != null) {
+      const nameReg = /^[a-zA-Z][a-zA-Z0-9-_\.]{1,20}$/; /*login should be min 2, max 20 symbols; it can contain
+      capital and lowercase letters, numbers, first symbol must be a letter; */
+      return nameReg.test(str);
+    } else {
+      return false;
+    }
+  };
+
+  //this function logs user in after they click the login button;
+  notAuthorizedUserHandle() {
+
+    const logIn = (event) => {
+      event.preventDefault();
+      this.loginVar = loginInput.value.trim();
+      localStorage.setItem("gloDelivery", this.loginVar);
+
+      if (this.isValid(this.loginVar)) {
+        this.toggleModalAuth();
+        buttonAuth.removeEventListener("click", this.toggleModalAuth);
+        buttonCloseAuth.removeEventListener("click", this.toggleModalAuth);
+        authForm.removeEventListener("submit", logIn);
+      } else {
+        errorMessage.classList.add("alert-modal-show");
+        loginInput.value = "";
+      }
+
+      authForm.reset();
+      this.checkAuth();
+    }
+
+    buttonAuth.addEventListener("click", this.toggleModalAuth);
+    buttonCloseAuth.addEventListener("click", this.toggleModalAuth);
+    authForm.addEventListener("submit", logIn);
+  }
+
+  //this function checks whether the user is logged in or not;
+  checkAuth() {
+    this.isValid(this.loginVar) ? this.authorizedUserHandle() : this.notAuthorizedUserHandle();
+  }
+
+}
+
+const toggleMixin = {
+  toggleModalAuth() {
+    modalAuth.classList.toggle("is-open");
+    errorMessage.classList.remove("alert-modal-show");
   }
 }
+
+Object.assign(UserAuthentication.prototype, toggleMixin);
+
 
 
 //This is an asynchronous function 
@@ -54,92 +321,6 @@ const getData = async (url) => {
 
   return await response.json();
 };
-
-//This function validates whether login name is correct via regular expression;
-const valid = (str) => {
-  if (str != null) {
-    const nameReg = /^[a-zA-Z][a-zA-Z0-9-_\.]{1,20}$/; /*login should be min 2, max 20 symbols; it can contain
-  capital and lowercase letters, numbers, first symbol must be a letter; */
-    return nameReg.test(str);
-  } else {
-    return false;
-  }
-};
-
-
-
-//This function checks whether modal window for cart checkout is opened or closed.
-const toggleModal = () => {
-  modal.classList.toggle("is-open");
-}
-
-//This function checks whether modal login window is open. If it's open, error box can be shown and vice versa.
-const toggleModalAuth = () => {
-  modalAuth.classList.toggle("is-open");
-  errorMessage.classList.remove("alert-modal-show");
-}
-
-/*This finction logs user out from the website if the logout button is clicked; 
-in other cases, userName is shown near the logout button;*/
-const authorizedUser = () => {
-
-  const logOut = () => {
-    cart.length = 0;
-    localStorage.removeItem(loginVar);
-    localStorage.removeItem("gloDelivery");
-    buttonAuth.style.display = ""; //empty strings state that the value will be equal to the original css value;
-    userName.style.display = "";
-    buttonOut.style.display = "";
-    cartButton.style.display = "";
-    buttonOut.removeEventListener("click", logOut);
-    loginVar = null;
-    checkAuth();
-
-  }
-
-  userName.textContent = loginVar;
-
-  buttonAuth.style.display = "none";
-  userName.style.display = "inline";
-  buttonOut.style.display = "flex";
-  cartButton.style.display = "flex";
-  loadCart();
-
-  buttonOut.addEventListener("click", logOut);
-
-}
-
-//this function logs user in after they click the login button;
-const notAuthorizedUser = () => {
-
-  const logIn = (event) => {
-    event.preventDefault();
-    loginVar = loginInput.value.trim();
-    localStorage.setItem("gloDelivery", loginVar);
-
-    if (valid(loginVar)) {
-      toggleModalAuth();
-      buttonAuth.removeEventListener("click", toggleModalAuth);
-      buttonCloseAuth.removeEventListener("click", toggleModalAuth);
-      authForm.removeEventListener("submit", logIn);
-    } else {
-      errorMessage.classList.add("alert-modal-show");
-      loginInput.value = "";
-    }
-
-    authForm.reset();
-    checkAuth();
-  }
-
-  buttonAuth.addEventListener("click", toggleModalAuth);
-  buttonCloseAuth.addEventListener("click", toggleModalAuth);
-  authForm.addEventListener("submit", logIn);
-}
-
-//this function checks whether the user is logged in or not;
-const checkAuth = () => {
-  valid(loginVar) ? authorizedUser() : notAuthorizedUser();
-}
 
 //this function generates an html card with a restaurant on the main page;
 const createCardRestaurant = ({ image, kitchen, name,
@@ -325,33 +506,6 @@ const addToCart = (event) => {
   saveCartData();
 }
 
-const renderCart = () => {
-  cartContainer.textContent = "";
-
-  cart.forEach(({ id, cost, title, count }) => {
-
-    const itemCart = `
-          <div class="food-row">
-              <span class="food-name">${title}</span>
-              <strong class="food-price">${cost}</strong>
-              <div class="food-counter">
-                    <button class="counter-button counter-minus" data-id="${id}">-</button>
-                    <span class="counter">${count}</span>
-                    <button class="counter-button counter-plus" data-id="${id}">+</button>
-              </div>
-          </div>
-          `;
-
-    cartContainer.insertAdjacentHTML("afterbegin", itemCart);
-  })
-
-  const totalPrice = cart.reduce((result, item) => {
-    return result + (parseFloat(item.cost) * item.count);
-
-  }, 0);
-
-  modalPrice.textContent = totalPrice + " ₽";
-}
 
 const changeCount = (event) => {
   const target = event.target;
@@ -384,8 +538,8 @@ const init = () => {
   });
 
   //this event listener registers every clieck on a cart button;
-  cartButton.addEventListener("click", renderCart);
-    
+  cartButton.addEventListener("click", () => cart.renderCart());
+
   cartButton.addEventListener("click", toggleModal);
 
   //this event listener registers every click on the close button of the card modal window;
@@ -397,10 +551,7 @@ const init = () => {
   //this listener registers "+" and "-" button clicks within shopping cart
   cartContainer.addEventListener("click", changeCount);
 
-  buttonClearCart.addEventListener("click", () => {
-    cart.length = 0;
-    renderCart();
-  });
+  buttonClearCart.addEventListener("click", () => cart.clear());
 
   //this listener registers every click on the logo of the website;
   logo.addEventListener("click", () => {
@@ -422,7 +573,9 @@ const init = () => {
   //this listener registers when and what user enters in the search box;
   inputSearch.addEventListener("keydown", searchFieldProcessing);
 
-  checkAuth();
+  let userAuthentication = new UserAuthentication();
+  console.log(userAuthentication.loginVar);
+  userAuthentication.checkAuth();
 
   //This is an inicialization code of the slider provided by the Swiper library;
   new Swiper(".swiper-container", {
