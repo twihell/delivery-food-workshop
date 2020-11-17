@@ -67,12 +67,6 @@ const cartButton = document.querySelector("#cart-button"),
 // };
 
 
-
-//This function checks whether modal window for cart checkout is opened or closed.
-const toggleModal = () => {
-  modal.classList.toggle("is-open");
-}
-
 // //This function checks whether modal login window is open. If it's open, error box can be shown and vice versa.
 // const toggleModalAuth = () => {
 //   modalAuth.classList.toggle("is-open");
@@ -146,12 +140,17 @@ class Cart {
     this.cart = cart;
   }
 
-  addToCart(item) {
-    this.cart.push(item);
+  addItems(item) {
+    let currentItem = this.findItem(item.id);
+    if (currentItem) {
+      currentItem.count++;
+    } else {
+      this.cart.push(item);
+    }
   }
 
   findItem(id) {
-    this.cart.find(item => {
+    return this.cart.find(item => {
       return item.id === id;
     })
   }
@@ -160,39 +159,25 @@ class Cart {
     return [...this.cart];
   }
 
-  renderCart() {
-    cartContainer.textContent = "";
-  
-    this.cart.forEach(({ id, cost, title, count }) => {
-  
-      const itemCart = `
-            <div class="food-row">
-                <span class="food-name">${title}</span>
-                <strong class="food-price">${cost}</strong>
-                <div class="food-counter">
-                      <button class="counter-button counter-minus" data-id="${id}">-</button>
-                      <span class="counter">${count}</span>
-                      <button class="counter-button counter-plus" data-id="${id}">+</button>
-                </div>
-            </div>
-            `;
-  
-      cartContainer.insertAdjacentHTML("afterbegin", itemCart);
-    })
-  
-    const totalPrice = this.cart.reduce((result, item) => {
-      return result + (parseFloat(item.cost) * item.count);
-  
-    }, 0);
-  
-    modalPrice.textContent = totalPrice + " ₽";
-  }
-
   clear() {
     this.cart.length = 0;
-    this.renderCart();
   }
-  
+
+  reduceItem(itemId) {
+    let currentItem = this.findItem(itemId);
+    if (currentItem.count > 1) {
+
+      currentItem.count--;
+    } else {
+      this.cart.splice(this.cart.indexOf(currentItem), 1);
+    }
+
+  }
+
+  incrementItem(itemId) {
+    let currentItem = this.findItem(itemId);
+    currentItem.count++;
+  }
 
 
 }
@@ -207,12 +192,10 @@ class DataStorage {
   }
 
   loadCart(cart) {
-    console.log("+++++", cart);
     if (localStorage.getItem(this.loginVar)) {
-      
+
       let fromStorage = localStorage.getItem(this.loginVar);
-      console.log(fromStorage, "from storage")
-      JSON.parse(fromStorage).forEach(item => cart.addToCart(item));
+      JSON.parse(fromStorage).forEach(item => cart.addItems(item));
     }
   }
 
@@ -222,6 +205,7 @@ class DataStorage {
 
   removeLoginData() {
     localStorage.removeItem(this.loginVar);
+    this.loginVar = null;
   }
 
 }
@@ -229,16 +213,28 @@ class DataStorage {
 
 class UserAuthentication extends DataStorage {
 
+  isValid(str) {
+    if (str != null) {
+      const nameReg = /^[a-zA-Z][a-zA-Z0-9-_\.]{1,20}$/; /*login should be min 2, max 20 symbols; it can contain
+      capital and lowercase letters, numbers, first symbol must be a letter; */
+      return nameReg.test(str);
+    } else {
+      return false;
+    }
+  }
+
   authorizedUserHandle() {
 
     const logOut = () => {
+
       cart.length = 0;
       buttonAuth.style.display = ""; //empty strings state that the value will be equal to the original css value;
       userName.style.display = "";
       buttonOut.style.display = "";
       cartButton.style.display = "";
       buttonOut.removeEventListener("click", logOut);
-      this.loginVar = null;
+      this.removeLoginData();
+      this.removeCartData();
       this.checkAuth();
 
     }
@@ -255,30 +251,24 @@ class UserAuthentication extends DataStorage {
 
   }
 
-  isValid(str) {
-    if (str != null) {
-      const nameReg = /^[a-zA-Z][a-zA-Z0-9-_\.]{1,20}$/; /*login should be min 2, max 20 symbols; it can contain
-      capital and lowercase letters, numbers, first symbol must be a letter; */
-      return nameReg.test(str);
-    } else {
-      return false;
-    }
-  };
 
   //this function logs user in after they click the login button;
   notAuthorizedUserHandle() {
 
     const logIn = (event) => {
+
       event.preventDefault();
       this.loginVar = loginInput.value.trim();
       localStorage.setItem("gloDelivery", this.loginVar);
 
       if (this.isValid(this.loginVar)) {
-        this.toggleModalAuth();
-        buttonAuth.removeEventListener("click", this.toggleModalAuth);
-        buttonCloseAuth.removeEventListener("click", this.toggleModalAuth);
+
+        toggleModalAuth();
+        buttonAuth.removeEventListener("click", toggleModalAuth);
+        buttonCloseAuth.removeEventListener("click", toggleModalAuth);
         authForm.removeEventListener("submit", logIn);
       } else {
+        console.log('does not work')
         errorMessage.classList.add("alert-modal-show");
         loginInput.value = "";
       }
@@ -287,9 +277,10 @@ class UserAuthentication extends DataStorage {
       this.checkAuth();
     }
 
-    buttonAuth.addEventListener("click", this.toggleModalAuth);
-    buttonCloseAuth.addEventListener("click", this.toggleModalAuth);
+    buttonAuth.addEventListener("click", toggleModalAuth);
+    buttonCloseAuth.addEventListener("click", toggleModalAuth);
     authForm.addEventListener("submit", logIn);
+
   }
 
   //this function checks whether the user is logged in or not;
@@ -299,16 +290,18 @@ class UserAuthentication extends DataStorage {
 
 }
 
-const toggleMixin = {
-  toggleModalAuth() {
-    modalAuth.classList.toggle("is-open");
-    errorMessage.classList.remove("alert-modal-show");
-  }
+let userAuthentication = new UserAuthentication();
+
+
+//This function checks whether modal window for cart checkout is opened or closed.
+const toggleModal = () => {
+  modal.classList.toggle("is-open");
 }
 
-Object.assign(UserAuthentication.prototype, toggleMixin);
-
-
+const toggleModalAuth = () => {
+  modalAuth.classList.toggle("is-open");
+  errorMessage.classList.remove("alert-modal-show");
+};
 
 //This is an asynchronous function 
 const getData = async (url) => {
@@ -346,6 +339,37 @@ const createCardRestaurant = ({ image, kitchen, name,
 
 
   cardsRestaurants.insertAdjacentHTML("beforeend", card);
+}
+
+const renderCart = () => {
+  cartContainer.textContent = "";
+  let cartOfItems = cart.getItems();
+  cartOfItems.forEach(({ id, cost, title, count }) => {
+
+    const itemCart = `
+          <div class="food-row">
+              <span class="food-name">${title}</span>
+              <strong class="food-price">${cost}</strong>
+              <div class="food-counter">
+                    <button class="counter-button counter-minus" data-id="${id}">-</button>
+                    <span class="counter">${count}</span>
+                    <button class="counter-button counter-plus" data-id="${id}">+</button>
+              </div>
+          </div>
+          `;
+
+    cartContainer.insertAdjacentHTML("afterbegin", itemCart);
+
+  })
+
+
+
+  const totalPrice = cartOfItems.reduce((result, item) => {
+    return result + (parseFloat(item.cost) * item.count);
+
+  }, 0);
+
+  modalPrice.textContent = totalPrice + " ₽";
 }
 
 
@@ -397,7 +421,7 @@ const createRestaurantHeading = ({ name, stars, price, kitchen }) => {
 they will be asked to log in first*/
 const openGoods = (event) => {
 
-  if (loginVar) {
+  if (userAuthentication.loginVar) {
     const target = event.target;
     const restaurant = target.closest(".card-restaurant"); //this method looks for the closest element with the given name;
 
@@ -427,7 +451,7 @@ const openGoods = (event) => {
     });
 
   } else {
-    toggleModalAuth();
+    userAuthentication.toggleModalAuth();
   }
 
 }
@@ -491,42 +515,30 @@ const addToCart = (event) => {
     const title = card.querySelector(".card-title-reg").textContent;
     const cost = card.querySelector(".card-price").textContent;
     const cardId = card.id;
-    const food = cart.find(item => {
-      return item.id === cardId;
-    })
+    cart.findItem(cardId);
 
-    if (food) {
-      food.count += 1;
-    } else {
-      cart.push({ id: cardId, cost, title, count: 1 });
-
-    }
+    cart.addItems({ id: cardId, cost, title, count: 1 });
 
   }
-  saveCartData();
+  userAuthentication.saveCartData(cart);
 }
-
 
 const changeCount = (event) => {
   const target = event.target;
 
   if (target.classList.contains("counter-button")) {
-    const food = cart.find(item => {
-      return item.id === target.dataset.id;
-    });
+    let dataId = target.dataset.id;
 
     if (target.classList.contains("counter-minus")) {
-      food.count--;
-      if (food.count === 0) {
-        cart.splice(cart.indexOf(food), 1)
-      }
+      cart.reduceItem(dataId);
     }
 
-    if (target.classList.contains("counter-plus")) food.count++;
+    if (target.classList.contains("counter-plus")) cart.incrementItem(dataId);
+
 
     renderCart();
   }
-  saveCartData();
+  userAuthentication.saveCartData(cart);
 }
 
 //event listeners are added at the end. They can be put in a general code initialization function;
@@ -537,8 +549,8 @@ const init = () => {
     data.forEach(createCardRestaurant);
   });
 
-  //this event listener registers every clieck on a cart button;
-  cartButton.addEventListener("click", () => cart.renderCart());
+  //this event listener registers every click on a cart button;
+  cartButton.addEventListener("click", renderCart);
 
   cartButton.addEventListener("click", toggleModal);
 
@@ -551,7 +563,10 @@ const init = () => {
   //this listener registers "+" and "-" button clicks within shopping cart
   cartContainer.addEventListener("click", changeCount);
 
-  buttonClearCart.addEventListener("click", () => cart.clear());
+  buttonClearCart.addEventListener("click", () => {
+    cart.clear()
+    renderCart();
+  });
 
   //this listener registers every click on the logo of the website;
   logo.addEventListener("click", () => {
@@ -573,8 +588,6 @@ const init = () => {
   //this listener registers when and what user enters in the search box;
   inputSearch.addEventListener("keydown", searchFieldProcessing);
 
-  let userAuthentication = new UserAuthentication();
-  console.log(userAuthentication.loginVar);
   userAuthentication.checkAuth();
 
   //This is an inicialization code of the slider provided by the Swiper library;
